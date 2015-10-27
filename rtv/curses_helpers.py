@@ -284,7 +284,8 @@ def text_input(window, allow_resize=True, completion=[]):
                 if completion != []:
                     out = self.gather()
                     if self.tested_match == False:
-                        self.matched_candidates = filter(lambda c: c.startswith(out.strip()), self.completion)
+                        self.matched_candidates = [c for c in self.completion if\
+                                c.startswith(out.strip())]
                         self.original_text = out.strip()
                         self.tested_match = True
                     if self.matched_candidates == []:
@@ -351,6 +352,9 @@ def prompt_input(window, prompt, hide=False, completion=[]):
 
     Set hide to True to make the input text invisible.
     """
+
+    if not completion:
+        raise TypeError('completion cannot be None')
 
     attr = curses.A_BOLD | Color.CYAN
     n_rows, n_cols = window.getmaxyx()

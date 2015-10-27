@@ -43,8 +43,8 @@ class SubredditPage(BasePage):
         # TODO Cache subreddit list locally to save time on start
         with self.loader(message="Loading subreddits"):
             subscriptions = reddit.get_my_subreddits(limit=None)
-            self.subscription_names = [str(subreddit) for subreddit in \
-                    list(subscriptions)].sort()
+            self.subscription_names = sorted([str(subreddit) for subreddit in \
+                    list(subscriptions)])
 
         content = SubredditContent.from_name(reddit, name, self.loader)
         super(SubredditPage, self).__init__(stdscr, reddit, content, oauth)
