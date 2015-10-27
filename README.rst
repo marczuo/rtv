@@ -1,3 +1,12 @@
+===========
+Fork changes
+===========
+
+This fork adds an autocompletion functionality for subreddit names.
+
+It also changes a number of key bindings to suit my preferences.
+(Eventually I'd like to allow the setting of custom key bindings in the config file.)
+
 ===========================
 RTV: Reddit Terminal Viewer
 ===========================
