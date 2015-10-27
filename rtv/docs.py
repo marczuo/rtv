@@ -23,30 +23,32 @@ browse comments.
 
 HELP = """
 Basic Commands
-  `j/k` or `UP/DOWN`  : Move the cursor up/down
-  `m/n` or `PgUp/PgDn`: Jump to the previous/next page
-  `o` or `ENTER`      : Open the selected item as a webpage
-  `r` or `F5`         : Refresh page content
-  `u`                 : Log in or switch accounts
-  `?`                 : Show the help screen
-  `q/Q`               : Quit/Force quit
+  `j/k` or `UP/DOWN`        : Move the cursor up/down
+  `c-b/c-f` or `PgUp/PgDn`  : Jump to the previous/next page
+  `o`                       : Open the selected item as a webpage
+  `r` or `F5`               : Refresh page content
+  `u`                       : Log in or switch accounts
+  `?`                       : Show the help screen
+  `q/Q`                     : Quit
 
 Authenticated Commands
-  `a/z`               : Upvote/downvote
-  `c`                 : Compose a new post or comment
-  `e`                 : Edit an existing post or comment
-  `d`                 : Delete an existing post or comment
-  `i`                 : Display new messages prompt
-  `s`                 : Open/close subscribed subreddits list
+  `a/z`                     : Upvote/downvote
+  `c`                       : Compose a new post or comment
+  `e`                       : Edit an existing post or comment
+  `d`                       : Delete an existing post or comment
+  `i`                       : Display new messages prompt
+  `s`                       : Open/close subscribed subreddits list
 
 Subreddit Mode
-  `l` or `RIGHT`      : Enter the selected submission
-  `/`                 : Open a prompt to switch subreddits
-  `f`                 : Open a prompt to search the current subreddit
+  `ENTER` or `RIGHT`        : Enter the selected submission
+  `/`                       : Open a prompt to switch subreddits
+  `F`                       : Switch to /r/front
+  `f`                       : Open a prompt to search the current subreddit
 
 Submission Mode
-  `h` or `LEFT`       : Return to subreddit mode
-  `SPACE`             : Fold the selected comment, or load additional comments
+  `q` or `LEFT`             : Return to subreddit mode
+  `SPACE`                   : Fold the selected comment, or load additional comments
+  `Q`                       : Quit
 """
 
 COMMENT_FILE = u"""

@@ -207,7 +207,6 @@ class LoadScreen(object):
                 window.refresh()
                 time.sleep(interval)
 
-
 class Color(object):
 
     """
@@ -247,7 +246,7 @@ class Color(object):
         return levels[level % len(levels)]
 
 
-def text_input(window, allow_resize=True):
+def text_input(window, allow_resize=True, completion=[]):
     """
     Transform a window into a text box that will accept user input and loop
     until an escape sequence is entered.
@@ -256,6 +255,63 @@ def text_input(window, allow_resize=True):
     If escape is pressed, return None.
     """
 
+    class AutocompBox(textpad.Textbox):
+        """
+        Extends the textpad.Textbox class to handle autocompletion.
+        """
+        def __init__(self, win, insert_mode=False, completion=[]):
+            textpad.Textbox.__init__(self, win, insert_mode)
+            self.completion = completion    # All possible completion candidates
+            self.tested_match = False       # Already loaded matched candidates
+            self.matched_candidates = []    # Matched candidates
+            self.candidate_loop_i = 0       # Index of currently highlighted candidate
+            self.original_text = ''         # What the user originally typed
+
+        def change_text(self, text):
+            # Change the text of the Textbox to text
+            (y, x0) = self.win.getyx()
+            try:
+                self.win.erase()
+                self.win.addstr(y, 0, text)
+            except curses.error:
+                pass
+            self.win.move(y, len(text))
+
+        def do_command(self, ch):
+            (y, x) = self.win.getyx()
+            self.lastcmd = ch
+            if ch == curses.ascii.TAB:
+                if completion != []:
+                    out = self.gather()
+                    if self.tested_match == False:
+                        self.matched_candidates = filter(lambda c: c.startswith(out.strip()), self.completion)
+                        self.original_text = out.strip()
+                        self.tested_match = True
+                    if self.matched_candidates == []:
+                        # No match found
+                        self.win.move(y, x)     # Go back to editing spot after gathering
+                        curses.beep()
+                    elif self.candidate_loop_i < len(self.matched_candidates):
+                        # Loop to next matched completion
+                        candidate = self.matched_candidates[self.candidate_loop_i]
+                        self.candidate_loop_i = self.candidate_loop_i + 1
+                        self.change_text(candidate)
+                    else:
+                        # Out of matches, go back to original user input
+                        self.candidate_loop_i = 0
+                        self.change_text(self.original_text)
+                else:
+                    # No possible completion
+                    curses.beep()
+                return 1
+            else:
+                # Reset matched candidates
+                self.tested_match = False
+                self.original_text = ''
+                self.matched_candidates = []
+                self.candidate_loop_i = 0
+                return textpad.Textbox.do_command(self, ch)
+
     window.clear()
 
     # Set cursor mode to 1 because 2 doesn't display on some terminals
@@ -263,12 +319,12 @@ def text_input(window, allow_resize=True):
 
     # Turn insert_mode off to avoid the recursion error described here
     # http://bugs.python.org/issue13051
-    textbox = textpad.Textbox(window, insert_mode=False)
+    textbox = AutocompBox(window, insert_mode=False, completion=completion)
     textbox.stripspaces = 0
 
     def validate(ch):
         "Filters characters for special key sequences"
-        if ch == ESCAPE:
+        if (ch == ESCAPE) or (ch == ascii.BEL): # ^g to cancel a command
             raise EscapeInterrupt
         if (not allow_resize) and (ch == curses.KEY_RESIZE):
             raise EscapeInterrupt
@@ -289,7 +345,7 @@ def text_input(window, allow_resize=True):
     return strip_textpad(out)
 
 
-def prompt_input(window, prompt, hide=False):
+def prompt_input(window, prompt, hide=False, completion=[]):
     """
     Display a prompt where the user can enter text at the bottom of the screen
 
@@ -309,10 +365,63 @@ def prompt_input(window, prompt, hide=False):
         subwin = window.derwin(1, n_cols - len(prompt),
                                n_rows - 1, len(prompt))
         subwin.attrset(attr)
-        out = text_input(subwin)
+        out = text_input(subwin, completion=completion)
 
     return out
 
+def prompt_quit(window, prompt):
+    """
+    A special prompt to see if the user wants to leave.
+    """
+
+    class Quitbox(textpad.Textbox):
+        def edit(self, validate=None):
+            while 1:
+                ch = self.win.getch()
+                if validate:
+                    ch = validate(ch)
+                if not ch:
+                    continue
+                if (chr(ch) == 'y') or (chr(ch) == 'Y'):
+                    return True
+                elif (chr(ch) == 'n') or (chr(ch) == 'N'):
+                    return False
+                else:
+                    curses.flash()
+                    return False
+
+    # Mostly copypasted from the above
+    attr = curses.A_BOLD | Color.CYAN
+    n_rows, n_cols = window.getmaxyx()
+
+    window.addstr(n_rows - 1, 0, prompt, attr)
+    window.refresh()
+    subwin = window.derwin(1, n_cols - len(prompt),
+                           n_rows - 1, len(prompt))
+    subwin.attrset(attr)
+
+    # Set cursor mode to 1 because 2 doesn't display on some terminals
+    curses.curs_set(1)
+
+    textbox = Quitbox(subwin, insert_mode=False)
+    textbox.stripspaces = 0
+
+    def validate(ch):
+        "Filters characters for special key sequences"
+        if (ch == ESCAPE) or (ch == ascii.BEL):
+            raise EscapeInterrupt
+        # Fix backspace for iterm
+        if ch == ascii.DEL:
+            ch = curses.KEY_BACKSPACE
+        return ch
+
+    try:
+        out = textbox.edit(validate=validate)
+    except EscapeInterrupt:
+        out = False
+
+    curses.curs_set(0)
+    return out
 
 @contextmanager
 def curses_session():

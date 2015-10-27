@@ -2,6 +2,7 @@ import curses
 import time
 import logging
 import atexit
+import praw.errors
 
 import requests
 
@@ -38,6 +39,12 @@ class SubredditPage(BasePage):
         self.controller = SubredditController(self)
         self.loader = LoadScreen(stdscr)
         self.oauth = oauth
+
+        # TODO Cache subreddit list locally to save time on start
+        with self.loader(message="Loading subreddits"):
+            subscriptions = reddit.get_my_subreddits(limit=None)
+            self.subscription_names = [str(subreddit) for subreddit in \
+                    list(subscriptions)].sort()
 
         content = SubredditContent.from_name(reddit, name, self.loader)
         super(SubredditPage, self).__init__(stdscr, reddit, content, oauth)
@@ -96,11 +103,20 @@ class SubredditPage(BasePage):
     def prompt_subreddit(self):
         "Open a prompt to navigate to a different subreddit"
         prompt = 'Enter Subreddit: /r/'
-        name = prompt_input(self.stdscr, prompt)
+        name = prompt_input(self.stdscr, prompt, completion=self.subscription_names)
         if name is not None:
-            self.refresh_content(name=name, order='ignore')
+            try:
+                self.refresh_content(name=name, order='ignore')
+            except praw.errors.OAuthException:
+                show_notification(self.stdscr, ['Invalid subreddit'])
+                self.refresh_content()
 
-    @SubredditController.register(curses.KEY_RIGHT, 'l')
+    @SubredditController.register('F')
+    def go_front_page(self):
+        "Navigate to the user's front page"
+        self.refresh_content(name='front', order='ignore')
+
+    @SubredditController.register(curses.KEY_RIGHT, 'l', 10, curses.KEY_ENTER)
     def open_submission(self):
         "Select the current submission to view posts"
 
@@ -112,7 +128,7 @@ class SubredditPage(BasePage):
             global history
             history.add(data['url_full'])
 
-    @SubredditController.register(curses.KEY_ENTER, 10, 'o')
+    @SubredditController.register('o')
     def open_link(self):
         "Open a link with the webbrowser"
         data = self.content.get(self.nav.absolute_index)

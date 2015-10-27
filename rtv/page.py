@@ -10,7 +10,7 @@ from kitchen.text.display import textual_width
 
 from .helpers import open_editor
 from .curses_helpers import (Color, show_notification, show_help, prompt_input,
-                             add_line)
+                             add_line, prompt_quit)
 from .docs import COMMENT_EDIT_FILE, SUBMISSION_FILE
 
 __all__ = ['Navigator', 'BaseController', 'BasePage']
@@ -263,21 +263,14 @@ class BasePage(object):
     def draw_item(window, data, inverted):
         raise NotImplementedError
 
-    @BaseController.register('q')
+    @BaseController.register('q', 'Q') # q is overrode in submission mode but not Q
     def exit(self):
         """
         Prompt to exit the application.
         """
 
-        ch = prompt_input(self.stdscr, "Do you really want to quit? (y/n): ")
-        if ch == 'y':
+        if prompt_quit(self.stdscr, "Do you really want to quit? (y/n): "):
             sys.exit()
-        elif ch != 'n':
-            curses.flash()
-
-    @BaseController.register('Q')
-    def force_exit(self):
-        sys.exit()
 
     @BaseController.register('?')
     def help(self):
@@ -313,12 +306,12 @@ class BasePage(object):
         self._move_cursor(1)
         self.clear_input_queue()
 
-    @BaseController.register('n', curses.KEY_NPAGE)
+    @BaseController.register('n', curses.KEY_NPAGE, curses.ascii.ACK) # ^f
     def move_page_down(self):
         self._move_page(1)
         self.clear_input_queue()
 
-    @BaseController.register('m', curses.KEY_PPAGE)
+    @BaseController.register('m', curses.KEY_PPAGE, curses.ascii.STX) # ^b
     def move_page_up(self):
         self._move_page(-1)
         self.clear_input_queue()

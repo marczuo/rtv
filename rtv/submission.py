@@ -55,7 +55,7 @@ class SubmissionPage(BasePage):
             # cursor index to go out of bounds.
             self.nav.page_index, self.nav.cursor_index = current_index, 0
 
-    @SubmissionController.register(curses.KEY_LEFT, 'h')
+    @SubmissionController.register(curses.KEY_LEFT, 'h', 'q')
     def exit_submission(self):
         "Close the submission and return to the subreddit page"
 
