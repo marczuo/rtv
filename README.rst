@@ -46,7 +46,7 @@ Or clone the repository
 
 .. code-block:: bash
 
-   $ git clone https://github.com/michael-lazar/rtv.git
+   $ git clone https://github.com/marczuo/rtv.git
    $ cd rtv
    $ sudo python3 setup.py install
 
@@ -75,12 +75,12 @@ Basic Commands
 --------------
 
 :``j``/``k`` or ``▲``/``▼``: Move the cursor up/down
-:``m``/``n`` or ``PgUp``/``PgDn``: Jump to the previous/next page
+:``^b``/``^f`` or ``PgUp``/``PgDn``: Jump to the previous/next page
 :``1-5``: Toggle post order (*hot*, *top*, *rising*, *new*, *controversial*)
 :``r`` or ``F5``: Refresh page content
 :``u``: Log in or switch accounts
 :``?``: Show the help screen
-:``q``/``Q``: Quit/Force quit
+:``q``: Quit
 
 ----------------------
 Authenticated Commands
@@ -103,9 +103,10 @@ Subreddit Mode
 
 In subreddit mode you can browse through the top submissions on either the front page or a specific subreddit.
 
-:``l`` or ``►``: Enter the selected submission
-:``o`` or ``ENTER``:  Open the submission link with your web browser
+:``ENTER`` or ``►``: Enter the selected submission
+:``o``:  Open the submission link with your web browser
 :``/``: Open a prompt to switch subreddits
+:``F``: Go back to /r/front
 :``f``: Open a prompt to search the current subreddit
 
 The ``/`` prompt accepts subreddits in the following formats
@@ -116,14 +117,17 @@ The ``/`` prompt accepts subreddits in the following formats
 * ``/r/front`` will redirect to the front page
 * ``/r/me`` will display your submissions
 
+NEW in forked version: Autocompletion is supported for subscribed subreddits. Assuming you are subscribed to
+/r/python, you can type ``/r/p`` and then ``TAB`` to automatically fill the name out.
+
 ---------------
 Submission Mode
 ---------------
 
 In submission mode you can view the self text for a submission and browse comments.
 
-:``h`` or ``◄``: Return to the subreddit
-:``o`` or ``ENTER``: Open the comment permalink with your web browser
+:``q`` or ``◄``: Return to the subreddit (``Q`` for quit)
+:``o``: Open the comment permalink with your web browser
 :``SPACE``: Fold the selected comment, or load additional comments
 
 =============
