@@ -418,6 +418,8 @@ def prompt_yesno(window, prompt):
                     ch = validate(ch)
                 if not ch:
                     continue
+                if ch not in range(0x110000):
+                    continue
                 if (chr(ch) == 'y') or (chr(ch) == 'Y'):
                     return True
                 elif (chr(ch) == 'n') or (chr(ch) == 'N'):

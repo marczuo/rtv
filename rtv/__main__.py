@@ -1,4 +1,5 @@
 import sys
+import signal
 import locale
 import logging
 
@@ -9,7 +10,7 @@ from requests import exceptions
 
 from . import config
 from .exceptions import RTVError
-from .curses_helpers import curses_session, LoadScreen
+from .curses_helpers import curses_session, LoadScreen, prompt_yesno
 from .submission import SubmissionPage
 from .subreddit import SubredditPage
 from .docs import AGENT
@@ -29,6 +30,12 @@ _logger = logging.getLogger(__name__)
 
 def main():
     "Main entry point"
+
+    # Handle SIGINT to ask for confirmation
+    def sigint_handler(signal, frame):
+        if prompt_yesno(stdscr, "Do you really want to quit? (y/n): "):
+            sys.exit()
+    signal.signal(signal.SIGINT, sigint_handler)
 
     # Squelch SSL warnings
     logging.captureWarnings(True)
@@ -61,11 +68,11 @@ def main():
     else:
         logging.root.addHandler(logging.NullHandler())
 
-    try:
-        print('Connecting...')
-        reddit = praw.Reddit(user_agent=AGENT.format(version=__version__))
-        reddit.config.decode_html_entities = False
-        with curses_session() as stdscr:
+    with curses_session() as stdscr:
+        try:
+            print('Connecting...')
+            reddit = praw.Reddit(user_agent=AGENT.format(version=__version__))
+            reddit.config.decode_html_entities = False
             oauth = OAuthTool(reddit, stdscr, LoadScreen(stdscr))
             if oauth.refresh_token:
                 oauth.authorize()
@@ -76,16 +83,19 @@ def main():
             subreddit = args.subreddit or 'front'
             page = SubredditPage(stdscr, reddit, oauth, subreddit)
             page.loop()
-    except (exceptions.RequestException, praw.errors.PRAWException,
-            RTVError) as e:
-        _logger.exception(e)
-        print('{}: {}'.format(type(e).__name__, e))
-    except KeyboardInterrupt:
-        pass
-    finally:
-        # Ensure sockets are closed to prevent a ResourceWarning
-        reddit.handler.http.close()
-        # Explicitly close file descriptors opened by Tornado's IOLoop
-        tornado.ioloop.IOLoop.current().close(all_fds=True)
+        except (exceptions.RequestException, praw.errors.PRAWException,
+                RTVError) as e:
+            _logger.exception(e)
+            print('{}: {}'.format(type(e).__name__, e))
+        except KeyboardInterrupt:
+            # Not sure why we need a duplicate when we already handled the SIGINT
+            # but oh well
+            if prompt_yesno(stdscr, "Do you really want to quit? (y/n): "):
+                sys.exit()
+        finally:
+            # Ensure sockets are closed to prevent a ResourceWarning
+            reddit.handler.http.close()
+            # Explicitly close file descriptors opened by Tornado's IOLoop
+            tornado.ioloop.IOLoop.current().close(all_fds=True)
 
 sys.exit(main())

@@ -364,13 +364,12 @@ class BasePage(object):
         """
 
         if self.reddit.is_oauth_session():
-            ch = prompt_input(self.stdscr, "Log out? (y/n): ")
-            if ch == 'y':
+            if prompt_yesno(self.stdscr, "Log out? (y/n): "):
                 self.oauth.clear_oauth_data()
                 self.subscription_names = []
                 show_notification(self.stdscr, ['Logged out'])
-            elif ch != 'n':
-                curses.flash()
+            else:
+                return
         else:
             self.oauth.authorize()
             # TODO Cache subreddit list locally to save time on start
@@ -395,8 +394,7 @@ class BasePage(object):
             return
 
         prompt = 'Are you sure you want to delete this? (y/n): '
-        char = prompt_input(self.stdscr, prompt)
-        if char != 'y':
+        if not prompt_yesno(self.stdscr, prompt):
             show_notification(self.stdscr, ['Aborted'])
             return
 
