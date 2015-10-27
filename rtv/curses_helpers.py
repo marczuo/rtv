@@ -264,7 +264,7 @@ def text_input(window, allow_resize=True, completion=[]):
             self.completion = completion    # All possible completion candidates
             self.tested_match = False       # Already loaded matched candidates
             self.matched_candidates = []    # Matched candidates
-            self.candidate_loop_i = 0       # Index of currently highlighted candidate
+            self.candidate_loop_i = -1       # Index of currently highlighted candidate
             self.original_text = ''         # What the user originally typed
 
         def change_text(self, text):
@@ -281,25 +281,60 @@ def text_input(window, allow_resize=True, completion=[]):
             (y, x) = self.win.getyx()
             self.lastcmd = ch
             if ch == curses.ascii.TAB:
-                if completion != []:
+                if completion and completion != []:
                     out = self.gather()
                     if self.tested_match == False:
                         self.matched_candidates = [c for c in self.completion if\
-                                c.startswith(out.strip())]
+                                c.lower().startswith(out.strip())]
                         self.original_text = out.strip()
                         self.tested_match = True
                     if self.matched_candidates == []:
                         # No match found
                         self.win.move(y, x)     # Go back to editing spot after gathering
                         curses.beep()
-                    elif self.candidate_loop_i < len(self.matched_candidates):
-                        # Loop to next matched completion
+                    elif self.candidate_loop_i == -1:
+                        # Loop to first matched completion
+                        self.candidate_loop_i = 0
                         candidate = self.matched_candidates[self.candidate_loop_i]
+                        self.change_text(candidate)
+                    elif self.candidate_loop_i < len(self.matched_candidates)-1:
+                        # Loop to next matched completion
                         self.candidate_loop_i = self.candidate_loop_i + 1
+                        candidate = self.matched_candidates[self.candidate_loop_i]
                         self.change_text(candidate)
                     else:
                         # Out of matches, go back to original user input
-                        self.candidate_loop_i = 0
+                        self.candidate_loop_i = -1
+                        self.change_text(self.original_text)
+                else:
+                    # No possible completion
+                    curses.beep()
+                return 1
+            elif ch == curses.KEY_BTAB:
+                if completion and completion != []:
+                    out = self.gather()
+                    if self.tested_match == False:
+                        self.matched_candidates = [c for c in self.completion if\
+                                c.lower().startswith(out.strip())]
+                        self.original_text = out.strip()
+                        self.tested_match = True
+                    if self.matched_candidates == []:
+                        # No match found
+                        self.win.move(y, x)     # Go back to editing spot after gathering
+                        curses.beep()
+                    elif self.candidate_loop_i == -1:
+                        # Loop to last matched completion
+                        self.candidate_loop_i = len(self.matched_candidates) - 1
+                        candidate = self.matched_candidates[self.candidate_loop_i]
+                        self.change_text(candidate)
+                    elif self.candidate_loop_i > 0:
+                        # Loop to previous matched completion
+                        self.candidate_loop_i = self.candidate_loop_i - 1
+                        candidate = self.matched_candidates[self.candidate_loop_i]
+                        self.change_text(candidate)
+                    else:
+                        # Out of matches, go back to original user input
+                        self.candidate_loop_i = -1
                         self.change_text(self.original_text)
                 else:
                     # No possible completion
@@ -310,7 +345,7 @@ def text_input(window, allow_resize=True, completion=[]):
                 self.tested_match = False
                 self.original_text = ''
                 self.matched_candidates = []
-                self.candidate_loop_i = 0
+                self.candidate_loop_i = -1
                 return textpad.Textbox.do_command(self, ch)
 
     window.clear()
@@ -353,9 +388,6 @@ def prompt_input(window, prompt, hide=False, completion=[]):
     Set hide to True to make the input text invisible.
     """
 
-    if not completion:
-        raise TypeError('completion cannot be None')
-
     attr = curses.A_BOLD | Color.CYAN
     n_rows, n_cols = window.getmaxyx()
 
@@ -373,12 +405,12 @@ def prompt_input(window, prompt, hide=False, completion=[]):
 
     return out
 
-def prompt_quit(window, prompt):
+def prompt_yesno(window, prompt):
     """
-    A special prompt to see if the user wants to leave.
+    A special prompt for yes/no questions.
     """
 
-    class Quitbox(textpad.Textbox):
+    class Yesnobox(textpad.Textbox):
         def edit(self, validate=None):
             while 1:
                 ch = self.win.getch()
@@ -407,7 +439,7 @@ def prompt_quit(window, prompt):
     # Set cursor mode to 1 because 2 doesn't display on some terminals
     curses.curs_set(1)
 
-    textbox = Quitbox(subwin, insert_mode=False)
+    textbox = Yesnobox(subwin, insert_mode=False)
     textbox.stripspaces = 0
 
     def validate(ch):

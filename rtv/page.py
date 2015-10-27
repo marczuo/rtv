@@ -10,7 +10,7 @@ from kitchen.text.display import textual_width
 
 from .helpers import open_editor
 from .curses_helpers import (Color, show_notification, show_help, prompt_input,
-                             add_line, prompt_quit)
+                             add_line, prompt_yesno)
 from .docs import COMMENT_EDIT_FILE, SUBMISSION_FILE
 
 __all__ = ['Navigator', 'BaseController', 'BasePage']
@@ -252,6 +252,15 @@ class BasePage(object):
         self.oauth = oauth
         self.nav = Navigator(self.content.get, **kwargs)
 
+        # TODO Cache subreddit list locally to save time on start
+        if self.reddit.is_oauth_session():
+            with self.loader(message="Loading subreddits"):
+                subscriptions = reddit.get_my_subreddits(limit=None)
+                self.subscription_names = sorted([str(subreddit) for subreddit in \
+                        list(subscriptions)])
+        else:
+            self.subscription_names = []
+
         self._header_window = None
         self._content_window = None
         self._subwindows = None
@@ -269,7 +278,7 @@ class BasePage(object):
         Prompt to exit the application.
         """
 
-        if prompt_quit(self.stdscr, "Do you really want to quit? (y/n): "):
+        if prompt_yesno(self.stdscr, "Do you really want to quit? (y/n): "):
             sys.exit()
 
     @BaseController.register('?')
@@ -358,11 +367,17 @@ class BasePage(object):
             ch = prompt_input(self.stdscr, "Log out? (y/n): ")
             if ch == 'y':
                 self.oauth.clear_oauth_data()
+                self.subscription_names = []
                 show_notification(self.stdscr, ['Logged out'])
             elif ch != 'n':
                 curses.flash()
         else:
             self.oauth.authorize()
+            # TODO Cache subreddit list locally to save time on start
+            with self.loader(message="Loading subreddits"):
+                subscriptions = self.reddit.get_my_subreddits(limit=None)
+                self.subscription_names = sorted([str(subreddit) for subreddit in \
+                        list(subscriptions)])
 
     @BaseController.register('d')
     def delete(self):
