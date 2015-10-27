@@ -34,14 +34,14 @@ class SubredditController(BaseController):
 
 class SubredditPage(BasePage):
 
-    def __init__(self, stdscr, reddit, oauth, name):
+    def __init__(self, stdscr, reddit, oauth, name, subscription_names=[]):
 
         self.controller = SubredditController(self)
         self.loader = LoadScreen(stdscr)
         self.oauth = oauth
 
         content = SubredditContent.from_name(reddit, name, self.loader)
-        super(SubredditPage, self).__init__(stdscr, reddit, content, oauth)
+        super(SubredditPage, self).__init__(stdscr, reddit, content, oauth, subscription_names)
 
     def loop(self):
         "Main control loop"

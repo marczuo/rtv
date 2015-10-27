@@ -244,22 +244,15 @@ class BasePage(object):
     MIN_HEIGHT = 10
     MIN_WIDTH = 20
 
-    def __init__(self, stdscr, reddit, content, oauth, **kwargs):
+    def __init__(self, stdscr, reddit, content, oauth,\
+            subscription_names=[], **kwargs):
 
         self.stdscr = stdscr
         self.reddit = reddit
         self.content = content
         self.oauth = oauth
         self.nav = Navigator(self.content.get, **kwargs)
-
-        # TODO Cache subreddit list locally to save time on start
-        if self.reddit.is_oauth_session():
-            with self.loader(message="Loading subreddits"):
-                subscriptions = reddit.get_my_subreddits(limit=None)
-                self.subscription_names = sorted([str(subreddit) for subreddit in \
-                        list(subscriptions)])
-        else:
-            self.subscription_names = []
+        self.subscription_names = subscription_names
 
         self._header_window = None
         self._content_window = None

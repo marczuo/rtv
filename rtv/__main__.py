@@ -81,7 +81,17 @@ def main():
                 page = SubmissionPage(stdscr, reddit, oauth, url=args.link)
                 page.loop()
             subreddit = args.subreddit or 'front'
-            page = SubredditPage(stdscr, reddit, oauth, subreddit)
+
+            if reddit.is_oauth_session():
+                with LoadScreen(stdscr)(message="Loading subreddits"):
+                    subscriptions = reddit.get_my_subreddits(limit=None)
+                    subscription_names = sorted([str(subreddit) for subreddit in \
+                            list(subscriptions)])
+            else:
+                subscription_names = []
+
+            page = SubredditPage(stdscr, reddit, oauth, subreddit,\
+                    subscription_names=subscription_names)
             page.loop()
         except (exceptions.RequestException, praw.errors.PRAWException,
                 RTVError) as e:
